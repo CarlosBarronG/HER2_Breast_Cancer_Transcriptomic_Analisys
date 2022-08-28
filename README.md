@@ -8,4 +8,4 @@ I used the samples of 8 HER2 breast cancer patients for training data taken from
 
 The GRCh38p.14 was used as reference genome
 
-The paper in which the results are shown is title # "A Gene Expression Signature in HER2+ Breast Cancer Patients Related to Neoadjuvant Chemotherapy Resistance, Overall Survival, and Disease-Free Survival" #
+The paper in which the results are shown is title "A Gene Expression Signature in HER2+ Breast Cancer Patients Related to Neoadjuvant Chemotherapy Resistance, Overall Survival, and Disease-Free Survival"

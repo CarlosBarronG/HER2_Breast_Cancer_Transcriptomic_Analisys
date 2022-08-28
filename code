@@ -71,6 +71,45 @@ text(res$log2FoldChange[2], -log10(res$pvalue)[1:10], res$symbol[1:10])
 filtered1 <- filter(as.data.frame(res),pvalue<0.05)
 filtered2 <- filter(as.data.frame(res),padj<0.05)
 
+#volcano plot p<0.05
+ggplot(filtrada,aes(log2FoldChange,pvalue,label=symbol,color=expression))+
+  geom_point()+
+  scale_color_manual(labels = c("Over: DEGs=1005", "Sub: DEGs= 980"),
+                     values=c("red","blue"))+
+  geom_text(check_overlap=TRUE,
+            vjust = 0, 
+            nudge_y =.2, 
+            colour="black", 
+            alpha=1)+
+  labs(title = "P-value", 
+       y = "P-value", 
+       x="Log2FoldChange", 
+       color = "Expression\n")+
+  scale_y_continuous(trans = "log10")+
+  theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"), 
+        text= element_text(colour = "black", face = "bold", size = 14), 
+        axis.text.x = element_text(face="bold", colour = "black"),
+        axis.title.y = element_text(size = 14))
+
+ggplot(filtrada,aes(log2FoldChange,padj,label=symbol,color=expression))+
+  geom_point()+
+  scale_color_manual(labels = c("Sobre: DEGs=1005", "Sub: DEGs= 980"), values=c("red","blue"))+
+  geom_text(check_overlap=TRUE,
+            vjust = 0, 
+            nudge_y =.2, 
+            colour="black", 
+            alpha=1)+
+  labs(title = "Padj-value", 
+       y = "Padj-value", 
+       x="Log2FoldChange",
+       color = "Expresión\n")+
+  scale_y_continuous(trans = "log10")+
+  theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        text= element_text(colour = "black", face = "bold", size = 14),
+        axis.text.x = element_text(face="bold", colour = "black"), 
+        axis.title.y = element_text(size = 14))
+
+
 #Escribimos los resultados en un csv
 dir.create("/media/carlos/4T/Secuenciacion_Carlos/RESULTADOS/ANALSISHER2")
 setwd("/media/carlos/4T/Secuenciacion_Carlos/RESULTADOS/ANALSISHER2")

@@ -1,0 +1,127 @@
+# along the script READS reference to the file with the reads, OUTPUT_NAME the prefix of the outputfile name 
+
+# flexbar for adapters remove and quality control
+
+flexbar -r READS -a ADAPTERS.fa -qt 30 -m 130 -t OUTPUT_NAME
+
+
+#kallisto for building index
+
+kallisto index GRCh38.fasta -i GRCh38_index
+
+#kallisto for pseudoalignment
+
+kallisto quant -i GRCh38_index -o OUTPUT_NAME READS_1 READS_2(paired)
+
+
+
+##The following lines in code for R
+
+library(biomaRt)
+library(tximport)
+library("DESeq2")
+library("ggplot2")
+library("dplyr")
+library("tidyverse")
+ensembl <- useMart(biomart = "ensembl", dataset = "hsapiens_gene_ensembl")
+t2g0 <- getBM(attributes = c("ensembl_transcript_id", 
+                             "ensembl_gene_id", 
+                             "external_gene_name",
+                             "transcript_length",
+                             "description",
+                             "definition_1006",
+                             "kegg_enzyme"), 
+              mart = ensembl)
+files <- c("/media/carlos/4T/Secuenciacion_Carlos/KALLISTO/3",
+           "/media/carlos/4T/Secuenciacion_Carlos/KALLISTO/12",
+           "/media/carlos/4T/Secuenciacion_Carlos/KALLISTO/27",
+           "/media/carlos/4T/Secuenciacion_Carlos/KALLISTO/28",
+           "/media/carlos/4T/Secuenciacion_Carlos/KALLISTO/44",
+           "/media/carlos/4T/Secuenciacion_Carlos/KALLISTO/7",
+           "/media/carlos/4T/Secuenciacion_Carlos/KALLISTO/24",
+           "/media/carlos/4T/Secuenciacion_Carlos/KALLISTO/32")
+sampleTable <- data.frame(NAME =str_remove_all(files,"/media/carlos/4T/Secuenciacion_Carlos/KALLISTO/"),
+                          RESPONSE =c("Resistant",
+                                  "Resistant",
+                                  "Resistant",
+                                  "Resistant",
+                                  "Resistant",
+                                  "Sensitive",
+                                  "Sensitive",
+                                  "Sensitive"),
+                          TYPE="HER2")
+files <- paste0(files, '/abundance.h5')
+txi.kallisto.tsv <- tximport(files, type = "kallisto", tx2gene = t2g0, ignoreAfterBar = TRUE, ignoreTxVersion = T)
+
+colnames(txi.kallisto.tsv$counts) <- sampleTable$NAME
+dds <- DESeqDataSetFromTximport(txi = txi.kallisto.tsv, colData = sampleTable, design = ~RESPONSE)
+rld <- rlog(dds)
+plotPCA(rld, intgroup = c("RESPONSE"))+
+  geom_label(aes(label = sampleTable$RESPONSE), nudge_x = 0.02, nudge_y = 0.01)
+dds$TYPE<- relevel(dds$RESPONSE, ref = "Sensitive")
+dds <- DESeq(dds)
+res <- results(dds)
+res <- res[sort.list(res$padj),]
+res$symbol <- t2g0$external_gene_name[match(rownames(res), t2g0$ensembl_gene_id)]
+res$length<- t2g0$transcript_length[match(rownames(res),t2g0$ensembl_gene_id)]
+res$description <- t2g0$description[match(rownames(res),t2g0$ensembl_gene_id)]
+res$go <- t2g0$definition_1006[match(rownames(res),t2g0$ensembl_gene_id)]
+plot(res$log2FoldChange, -log10(res$pvalue))
+text(res$log2FoldChange[2], -log10(res$pvalue)[1:10], res$symbol[1:10])
+filtered1 <- filter(as.data.frame(res),pvalue<0.05)
+filtered2 <- filter(as.data.frame(res),padj<0.05)
+
+#Escribimos los resultados en un csv
+dir.create("/media/carlos/4T/Secuenciacion_Carlos/RESULTADOS/ANALSISHER2")
+setwd("/media/carlos/4T/Secuenciacion_Carlos/RESULTADOS/ANALSISHER2")
+write.csv(res,"HER_RESISTENTE_VS_HER_SENSIBLE.csv")
+write.csv(filtered1,"HER_RESISTENTE_VS_HER_SENSIBLE_filtrada.csv")
+write.csv(filtered2,"HER_RESISTENTE_VS_HER_SENSIBLE_filtradapad.csv")
+
+#PCA con DEGS
+DEGSHER <- filter(t2g0, external_gene_name %in% as.character(filtered2$symbol))
+
+rld1 <- vst(dds)
+DEGS <- DEGSHER$ensembl_gene_id
+PCA_DEGS <-as.data.frame(rld@assays@data@listData[[1]])
+PCA_DEGs <-as.data.frame(rld@assays@data@listData[[1]])
+PCA_DEGS$external_gene_id <- rld@rowRanges@partitioning@NAMES
+PCA_DEGs$external_gene_id <- rld@rowRanges@partitioning@NAMES
+PCA_DEGS1 <- filter(PCA_DEGS,external_gene_id%in%DEGS)
+PCA_DEGS <- PCA_DEGS1[,-9]
+PCA_DEGS <- t(PCA_DEGS)
+PCA_DEGS_HER <- prcomp(PCA_DEGS)
+PCA_PLOT <- as.data.frame(PCA_DEGS_HER$x)
+PCA_PLOT$RESPUESTA <- sampleTable$RESPONSE
+
+ggplot(as.data.frame(PCA_PLOT),aes(PC1,PC2))+
+  geom_point(aes(color=RESPUESTA),size=3)+
+  scale_color_manual(values = c("red","blue"))+
+  xlab("PC1 (35.21%)")+
+  ylab("PC2 (17.71%)")+
+  ggtitle("PCA HER2 RESISTANT_VS_SENSITIVE")
+
+
+
+library(factoextra)
+fviz_eig(PCA_DEGS_HER)  
+fviz_pca_ind(PCA_DEGS_LLA,
+             col.ind = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = T)
+
+new_data <- filter(t2g0, external_gene_name %in% filtered2$symbol)
+PCA_NUEVO <- PCA_DEGs[,new_data$ensembl_gene_id]
+
+#heatmap con DEGs
+library(pheatmap)
+library(RColorBrewer)
+library(EnvStats)
+library(reshape2)
+library(splitstackshape)
+install.packages("gplots")
+library(gplots)
+PCA_DEGS1$external_name <- t2g0$external_gene_name[match(rownames(PCA_DEGS1),t2g0$ensembl_gene_id)] 
+rownames(PCA_DEGS1) <- PCA_DEGS1$external_name
+Heatmapdata <- as.matrix(PCA_DEGS1[,-c(9,10)])
+heatmap.2(Heatmapdata,scale = "row")

@@ -84,9 +84,9 @@ DEGSHER <- filter(t2g0, external_gene_name %in% as.character(filtered2$symbol))
 rld1 <- vst(dds)
 DEGS <- DEGSHER$ensembl_gene_id
 PCA_DEGS <-as.data.frame(rld@assays@data@listData[[1]])
-PCA_DEGs <-as.data.frame(rld@assays@data@listData[[1]])
+PCA_DEGs <-as.data.frame(rld1@assays@data@listData[[1]])
 PCA_DEGS$external_gene_id <- rld@rowRanges@partitioning@NAMES
-PCA_DEGs$external_gene_id <- rld@rowRanges@partitioning@NAMES
+PCA_DEGs$external_gene_id <- rld1@rowRanges@partitioning@NAMES
 PCA_DEGS1 <- filter(PCA_DEGS,external_gene_id%in%DEGS)
 PCA_DEGS <- PCA_DEGS1[,-9]
 PCA_DEGS <- t(PCA_DEGS)

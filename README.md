@@ -4,7 +4,7 @@ and abundances tables were created.
 
 The second part was writen in R, in which the diferential expression analysis, heatmap, plots and other transformations were made.
 
-I used the samples of 8 HER2 breast cancer patients for training-data taken from the previous study GSE162187 made by our research group. For testing our results, the GSE162187 study was taken for validation with a total of with 222 samples as a test-data.
+I used the samples of 8 HER2 breast cancer patients for training-data taken from the previous study GSE162187 made by our research group. For testing our results, the GSE163882 study was taken for validation with a total of with 222 samples as a test-data.
 
 The GRCh38p.14 was used as reference genome
 

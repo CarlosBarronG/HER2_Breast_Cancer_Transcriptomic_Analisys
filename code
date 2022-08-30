@@ -164,3 +164,77 @@ PCA_DEGS1$external_name <- t2g0$external_gene_name[match(rownames(PCA_DEGS1),t2g
 rownames(PCA_DEGS1) <- PCA_DEGS1$external_name
 Heatmapdata <- as.matrix(PCA_DEGS1[,-c(9,10)])
 heatmap.2(Heatmapdata,scale = "row")
+
+
+#COX ANALYSIS OF OS AND DFS
+
+library("survival")
+library("survminer")
+
+setwd("Documents/PAPERS/HER2/")
+
+PATIENTS <- read.delim("denseDataOnlyDownload.tsv",sep = "\t")
+colnames(PATIENTS)[9] <- "Age"
+PATIENTS$radiation_therapy <- if_else(PATIENTS$radiation_therapy=="YES",1,0)
+PATIENTS$pathologic_stage <- if_else(PATIENTS$pathologic_stage=="Stage I",1,
+                                     if_else(PATIENTS$pathologic_stage=="Stage IA",2,
+                                             if_else(PATIENTS$pathologic_stage=="Stage IIA",3,
+                                                     if_else(PATIENTS$pathologic_stage=="Stage IIB",4,
+                                                             if_else(PATIENTS$pathologic_stage=="Stage IIIA",5,
+                                                                     if_else(PATIENTS$pathologic_stage=="Stage IIIB",6,
+                                                                             if_else(PATIENTS$pathologic_stage=="Stage IIIC",7,8)))))))
+
+
+cox_test <- function(x){
+  library("survival")
+  library("survminer")
+  PATIENTS <- read.delim("denseDataOnlyDownload.tsv",sep = "\t")
+  colnames(PATIENTS)[9] <- "Age"
+  PATIENTS$radiation_therapy <- if_else(PATIENTS$radiation_therapy=="YES",1,0)
+  PATIENTS$pathologic_stage <- if_else(PATIENTS$pathologic_stage=="Stage I",1,
+                                       if_else(PATIENTS$pathologic_stage=="Stage IA",2,
+                                               if_else(PATIENTS$pathologic_stage=="Stage IIA",3,
+                                                       if_else(PATIENTS$pathologic_stage=="Stage IIB",4,
+                                                               if_else(PATIENTS$pathologic_stage=="Stage IIIA",5,
+                                                                       if_else(PATIENTS$pathologic_stage=="Stage IIIB",6,
+                                                                               if_else(PATIENTS$pathologic_stage=="Stage IIIC",7,8)))))))
+  
+  m <- read.csv(paste0(x,".tsv"),sep="\t",header = T)
+  colnames(m)[5] <- "Expression"
+  colnames(m)[3] <- "Status"
+  colnames(m)[4] <- "Time"
+  m$Expression <- if_else(m$Expression=="low",1,2)
+  m <- merge(m,PATIENTS,by = "sample")
+  res.cox <- coxph(Surv(Time,Status)~ Expression+Age+pathologic_stage+radiation_therapy+data, data = m)
+  
+  summary(res.cox) 
+}
+
+
+
+#DFS
+setwd("DFS")
+list.files()
+cox_test("ATF6B")
+cox_test("DHRS13")
+cox_test("DIRAS1")
+cox_test("ERAL1")
+cox_test("GRIN2B")
+cox_test("IRX3")
+cox_test("L1CAM")
+cox_test("PBX2")
+cox_test("PRTFDC1")
+cox_test("S100B")
+cox_test("SLC9A3R2")
+cox_test("TNXB")
+
+#OS
+setwd("../OS/")
+list.files()
+cox_test("DIRAS1")
+cox_test("HLA-A")
+cox_test("IL22RA2")
+cox_test("MICA")
+cox_test("S100B")
+cox_test("SERPINF2")
+cox_test("TNXB")

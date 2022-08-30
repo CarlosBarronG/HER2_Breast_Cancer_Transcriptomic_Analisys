@@ -173,17 +173,6 @@ library("survminer")
 
 setwd("Documents/PAPERS/HER2/")
 
-PATIENTS <- read.delim("denseDataOnlyDownload.tsv",sep = "\t")
-colnames(PATIENTS)[9] <- "Age"
-PATIENTS$radiation_therapy <- if_else(PATIENTS$radiation_therapy=="YES",1,0)
-PATIENTS$pathologic_stage <- if_else(PATIENTS$pathologic_stage=="Stage I",1,
-                                     if_else(PATIENTS$pathologic_stage=="Stage IA",2,
-                                             if_else(PATIENTS$pathologic_stage=="Stage IIA",3,
-                                                     if_else(PATIENTS$pathologic_stage=="Stage IIB",4,
-                                                             if_else(PATIENTS$pathologic_stage=="Stage IIIA",5,
-                                                                     if_else(PATIENTS$pathologic_stage=="Stage IIIB",6,
-                                                                             if_else(PATIENTS$pathologic_stage=="Stage IIIC",7,8)))))))
-
 
 cox_test <- function(x){
   library("survival")
@@ -210,10 +199,64 @@ cox_test <- function(x){
   summary(res.cox) 
 }
 
+univariate_cox_test <- function(x){
+  library("survival")
+  library("survminer")
+  PATIENTS <- read.delim("denseDataOnlyDownload.tsv",sep = "\t")
+  colnames(PATIENTS)[9] <- "Age"
+  PATIENTS$radiation_therapy <- if_else(PATIENTS$radiation_therapy=="YES",1,0)
+  PATIENTS$pathologic_stage <- if_else(PATIENTS$pathologic_stage=="Stage I",1,
+                                       if_else(PATIENTS$pathologic_stage=="Stage IA",2,
+                                               if_else(PATIENTS$pathologic_stage=="Stage IIA",3,
+                                                       if_else(PATIENTS$pathologic_stage=="Stage IIB",4,
+                                                               if_else(PATIENTS$pathologic_stage=="Stage IIIA",5,
+                                                                       if_else(PATIENTS$pathologic_stage=="Stage IIIB",6,
+                                                                               if_else(PATIENTS$pathologic_stage=="Stage IIIC",7,8)))))))
+  
+  m <- read.csv(paste0(x,".tsv"),sep="\t",header = T)
+  colnames(m)[5] <- "Expression"
+  colnames(m)[3] <- "Status"
+  colnames(m)[4] <- "Time"
+  m$Expression <- if_else(m$Expression=="low",1,2)
+  m <- merge(m,PATIENTS,by = "sample")
+  res.cox <- coxph(Surv(Time,Status)~ Expression, data = m)
+  
+  summary(res.cox) 
+}
 
 
-#DFS
+#univariate DFS
 setwd("DFS")
+list.files()
+univariate_cox_test("ATF6B")
+univariate_cox_test("DHRS13")
+univariate_cox_test("DIRAS1")
+univariate_cox_test("ERAL1")
+univariate_cox_test("GRIN2B")
+univariate_cox_test("IRX3")
+univariate_cox_test("L1CAM")
+univariate_cox_test("PBX2")
+univariate_cox_test("PRTFDC1")
+univariate_cox_test("S100B")
+univariate_cox_test("SLC9A3R2")
+univariate_cox_test("TNXB")
+
+#OS
+setwd("../OS/")
+list.files()
+univariate_cox_test("DIRAS1")
+univariate_cox_test("HLA-A")
+univariate_cox_test("IL22RA2")
+univariate_cox_test("MICA")
+univariate_cox_test("S100B")
+univariate_cox_test("SERPINF2")
+univariate_cox_test("TNXB")
+
+
+
+
+#multivariate DFS
+setwd("../DFS")
 list.files()
 cox_test("ATF6B")
 cox_test("DHRS13")
@@ -228,7 +271,7 @@ cox_test("S100B")
 cox_test("SLC9A3R2")
 cox_test("TNXB")
 
-#OS
+#MULTIVARIATE OS
 setwd("../OS/")
 list.files()
 cox_test("DIRAS1")
